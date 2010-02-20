@@ -23,12 +23,12 @@
 #include <gtk/gtk.h>
 
 #include "gitg-dnd.h"
-#include "gitg-ref.h"
 #include "gitg-cell-renderer-path.h"
-#include "gitg-utils.h"
-#include <string.h>
 #include "gitg-window.h"
 #include "gitg-branch-actions.h"
+#include "gitg-utils.h"
+
+#include <string.h>
 
 enum
 {
