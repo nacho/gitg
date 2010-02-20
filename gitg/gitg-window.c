@@ -24,13 +24,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <glib/gi18n.h>
+#include <libgitg/gitg-config.h>
+#include <libgitg/gitg-ref.h>
+#include <libgitg/gitg-runner.h>
 
 #include "config.h"
 
 #include "gitg-dirs.h"
-#include "gitg-ref.h"
 #include "gitg-utils.h"
-#include "gitg-runner.h"
 #include "gitg-window.h"
 #include "gitg-revision-view.h"
 #include "gitg-revision-tree-view.h"
@@ -42,7 +43,6 @@
 #include "gitg-dnd.h"
 #include "gitg-branch-actions.h"
 #include "gitg-preferences.h"
-#include "gitg-config.h"
 
 #define DYNAMIC_ACTION_DATA_KEY "GitgDynamicActionDataKey"
 #define DYNAMIC_ACTION_DATA_REMOTE_KEY "GitgDynamicActionDataRemoteKey"
@@ -889,6 +889,85 @@ gitg_window_set_select_on_load (GitgWindow  *window,
 	}
 
 	g_free (resolved);
+}
+
+static gboolean
+convert_setting_to_inactive_max(GValue const *setting, GValue *value, gpointer userdata)
+{
+	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
+	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
+
+	gint s = g_value_get_int(setting);
+	g_value_set_int(value, 2 + s * 8);
+
+	return TRUE;
+}
+
+static gboolean
+convert_setting_to_inactive_collapse(GValue const *setting, GValue *value, gpointer userdata)
+{
+	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
+	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
+
+	gint s = g_value_get_int(setting);
+	g_value_set_int(value, 1 + s * 3);
+
+	return TRUE;
+}
+
+static gboolean
+convert_setting_to_inactive_gap(GValue const *setting, GValue *value, gpointer userdata)
+{
+	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
+	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
+
+	g_value_set_int(value, 10);
+
+	return TRUE;
+}
+
+static gboolean
+convert_setting_to_inactive_enabled(GValue const *setting, GValue *value, gpointer userdata)
+{
+	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_BOOLEAN), FALSE);
+	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_BOOLEAN), FALSE);
+
+	gboolean s = g_value_get_boolean(setting);
+	g_value_set_boolean(value, s);
+
+	return TRUE;
+}
+
+
+static void
+bind_repository(GitgWindow *window)
+{
+	GitgPreferences *preferences;
+
+	if (window->priv->repository == NULL)
+		return;
+
+	preferences = gitg_preferences_get_default();
+
+	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
+				   window->priv->repository, "inactive-max",
+				   convert_setting_to_inactive_max,
+				   window);
+
+	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
+				   window->priv->repository, "inactive-collapse",
+				   convert_setting_to_inactive_collapse,
+				   window);
+
+	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
+				   window->priv->repository, "inactive-gap",
+				   convert_setting_to_inactive_gap,
+				   window);
+
+	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes-active",
+	                           window->priv->repository, "inactive-enabled",
+	                           convert_setting_to_inactive_enabled,
+	                           window);
 }
 
 static gboolean

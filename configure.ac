@@ -45,13 +45,18 @@ AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE", [Gettext package])
 
 AM_GLIB_GNU_GETTEXT
 
-PKG_CHECK_MODULES(PACKAGE, [
-	gtk+-2.0 >= 2.16.0
-	gthread-2.0
-	gtksourceview-2.0 >= 2.8
+PKG_CHECK_MODULES(GITG, [
+	glib-2.0
+	gobject-2.0
+	gmodule-2.0
 	gio-2.0
 	gio-unix-2.0
-	gmodule-2.0
+	gthread-2.0
+	gtk+-2.0 >= 2.16.0
+])
+
+PKG_CHECK_MODULES(PACKAGE, [
+	gtksourceview-2.0 >= 2.8
 	gconf-2.0
 ])
 
@@ -73,6 +78,7 @@ AM_GCONF_SOURCE_2
 
 AC_CONFIG_FILES([
 Makefile
+libgitg/Makefile
 gitg/Makefile
 data/Makefile
 data/gitg.desktop.in

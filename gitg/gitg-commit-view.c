@@ -25,9 +25,9 @@
 #include <gtksourceview/gtksourcestyleschememanager.h>
 #include <glib/gi18n.h>
 #include <string.h>
+#include <libgitg/gitg-commit.h>
 
 #include "gitg-commit-view.h"
-#include "gitg-commit.h"
 #include "gitg-utils.h"
 #include "gitg-diff-view.h"
 #include "gitg-preferences.h"

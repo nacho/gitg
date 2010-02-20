@@ -25,14 +25,13 @@
 
 #include <glib-object.h>
 #include "gitg-lane.h"
+#include "gitg-types.h"
 
 G_BEGIN_DECLS
 
 #define GITG_TYPE_REVISION				(gitg_revision_get_type ())
 #define GITG_REVISION(obj)				((GitgRevision *)obj)
 #define GITG_REVISION_CONST(obj)		((GitgRevision const *)obj)
-
-#include "gitg-types.h"
 
 typedef struct _GitgRevision		GitgRevision;
 

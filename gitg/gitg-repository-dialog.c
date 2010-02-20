@@ -1,10 +1,10 @@
 #include <glib/gi18n.h>
 
 #include <stdlib.h>
+#include <libgitg/gitg-config.h>
 
 #include "gitg-repository-dialog.h"
 #include "gitg-utils.h"
-#include "gitg-config.h"
 #include "gitg-spinner.h"
 
 #define GITG_REPOSITORY_DIALOG_GET_PRIVATE(object)(G_TYPE_INSTANCE_GET_PRIVATE((object), GITG_TYPE_REPOSITORY_DIALOG, GitgRepositoryDialogPrivate))

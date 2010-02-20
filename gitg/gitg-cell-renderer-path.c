@@ -21,8 +21,9 @@
  */
 
 #include <math.h>
+#include <libgitg/gitg-lane.h>
+
 #include "gitg-cell-renderer-path.h"
-#include "gitg-lane.h"
 #include "gitg-utils.h"
 #include "gitg-label-renderer.h"
 

@@ -24,11 +24,11 @@
 #include <gtksourceview/gtksourcelanguagemanager.h>
 #include <gtksourceview/gtksourcestyleschememanager.h>
 #include <string.h>
+#include <libgitg/gitg-revision.h>
+#include <libgitg/gitg-runner.h>
 
 #include "gitg-revision-view.h"
 #include "gitg-diff-view.h"
-#include "gitg-revision.h"
-#include "gitg-runner.h"
 #include "gitg-utils.h"
 
 #define GITG_REVISION_VIEW_GET_PRIVATE(object)(G_TYPE_INSTANCE_GET_PRIVATE((object), GITG_TYPE_REVISION_VIEW, GitgRevisionViewPrivate))

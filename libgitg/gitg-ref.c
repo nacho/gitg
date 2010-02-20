@@ -21,7 +21,6 @@
  */
 
 #include "gitg-ref.h"
-#include "gitg-utils.h"
 #include <string.h>
 
 typedef struct 

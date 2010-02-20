@@ -25,8 +25,6 @@
 #include "gitg-lanes.h"
 #include "gitg-ref.h"
 #include "gitg-types.h"
-#include "gitg-preferences.h"
-#include "gitg-data-binding.h"
 #include "gitg-config.h"
 
 #include <gio/gio.h>
@@ -48,7 +46,15 @@ enum
 	PROP_0,
 
 	PROP_PATH,
-	PROP_LOADER
+	PROP_LOADER,
+	PROP_SHOW_STAGED,
+	PROP_SHOW_UNSTAGED,
+	PROP_SHOW_STASH,
+	PROP_TOPO_ORDER,
+	PROP_INACTIVE_MAX,
+	PROP_INACTIVE_COLLAPSE,
+	PROP_INACTIVE_GAP,
+	PROP_INACTIVE_ENABLED
 };
 
 /* Signals */
@@ -106,6 +112,11 @@ struct _GitgRepositoryPrivate
 	LoadStage load_stage;
 
 	GFileMonitor *monitor;
+
+	guint show_staged : 1;
+	guint show_unstaged : 1;
+	guint show_stash : 1;
+	guint topoorder : 1;
 };
 
 inline static gint
@@ -409,6 +420,38 @@ gitg_repository_set_property(GObject *object, guint prop_id, GValue const *value
 			g_free(self->priv->path);
 			self->priv->path = gitg_utils_find_git(g_value_get_string(value));
 		break;
+		case PROP_SHOW_STAGED:
+			self->priv->show_staged = g_value_get_boolean(value);
+		break;
+		case PROP_SHOW_UNSTAGED:
+			self->priv->show_unstaged = g_value_get_boolean(value);
+		break;
+		case PROP_SHOW_STASH:
+			self->priv->show_stash = g_value_get_boolean(value);
+		break;
+		case PROP_TOPO_ORDER:
+			self->priv->topoorder = g_value_get_boolean(value);
+		break;
+		case PROP_INACTIVE_MAX:
+			g_object_set_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-max",
+			                      value);
+		break;
+		case PROP_INACTIVE_COLLAPSE:
+			g_object_set_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-collapse",
+			                      value);
+		break;
+		case PROP_INACTIVE_GAP:
+			g_object_set_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-gap",
+			                      value);
+		break;
+		case PROP_INACTIVE_ENABLED:
+			g_object_set_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-enabled",
+			                      value);
+		break;
 		default:
 			G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
 		break;
@@ -419,6 +462,8 @@ static void
 gitg_repository_get_property(GObject *object, guint prop_id, GValue *value, GParamSpec *pspec)
 {
 	GitgRepository *self = GITG_REPOSITORY(object);
+	gint int_val;
+	gboolean bool_val;
 
 	switch (prop_id)
 	{
@@ -427,6 +472,38 @@ gitg_repository_get_property(GObject *object, guint prop_id, GValue *value, GPar
 		break;
 		case PROP_LOADER:
 			g_value_set_object(value, self->priv->loader);
+		break;
+		case PROP_SHOW_STAGED:
+			g_value_set_boolean(value, self->priv->show_staged);
+		break;
+		case PROP_SHOW_UNSTAGED:
+			g_value_set_boolean(value, self->priv->show_unstaged);
+		break;
+		case PROP_SHOW_STASH:
+			g_value_set_boolean(value, self->priv->show_stash);
+		break;
+		case PROP_TOPO_ORDER:
+			g_value_set_boolean(value, self->priv->topoorder);
+		break;
+		case PROP_INACTIVE_MAX:
+			g_object_get_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-max",
+			                      value);
+		break;
+		case PROP_INACTIVE_COLLAPSE:
+			g_object_get_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-collapse",
+			                      value);
+		break;
+		case PROP_INACTIVE_GAP:
+			g_object_get_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-gap",
+			                      value);
+		break;
+		case PROP_INACTIVE_ENABLED:
+			g_object_get_property(G_OBJECT(self->priv->lanes),
+			                      "inactive-enabled",
+			                      value);
 		break;
 		default:
 			G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
@@ -554,6 +631,69 @@ gitg_repository_class_init(GitgRepositoryClass *klass)
 								      GITG_TYPE_RUNNER,
 								      G_PARAM_READABLE));
 
+	g_object_class_install_property(object_class, PROP_SHOW_STAGED,
+						 g_param_spec_boolean ("show-staged",
+								       "Show Staged",
+								       "Show staged",
+								       FALSE,
+								       G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_SHOW_UNSTAGED,
+						 g_param_spec_boolean ("show-unstaged",
+								       "Show Unstaged",
+								       "Show unstaged",
+								       FALSE,
+								       G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_SHOW_STASH,
+						 g_param_spec_boolean ("show-stash",
+								       "Show Stash",
+								       "Show stash",
+								       FALSE,
+								       G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_TOPO_ORDER,
+						 g_param_spec_boolean ("topo-order",
+								       "Topo order",
+								       "Show in topological order",
+								       FALSE,
+								       G_PARAM_READWRITE));
+
+	/* FIXME: gitg-lanes shouldn't be an object? */
+	g_object_class_install_property(object_class, PROP_INACTIVE_MAX,
+					 g_param_spec_int("inactive-max",
+							          "INACTIVE_MAX",
+							          "Maximum inactivity on a lane before collapsing",
+							          1,
+							          G_MAXINT,
+							          30,
+							          G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_INACTIVE_COLLAPSE,
+					 g_param_spec_int("inactive-collapse",
+							          "INACTIVE_COLLAPSE",
+							          "Number of revisions to collapse",
+							          1,
+							          G_MAXINT,
+							          10,
+							          G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_INACTIVE_GAP,
+					 g_param_spec_int("inactive-gap",
+							          "INACTIVE_GAP",
+							          "Minimum of revisions to leave between collapse and expand",
+							          1,
+							          G_MAXINT,
+							          10,
+							          G_PARAM_READWRITE));
+
+	g_object_class_install_property(object_class, PROP_INACTIVE_ENABLED,
+					 g_param_spec_boolean("inactive-enabled",
+							              "INACTIVE_ENABLED",
+							              "Lane collapsing enabled",
+							              TRUE,
+							              G_PARAM_READWRITE));
+
 	repository_signals[LOAD] =
 		g_signal_new ("load",
 			      G_OBJECT_CLASS_TYPE (object_class),
@@ -623,14 +763,11 @@ on_loader_end_loading(GitgRunner *object, gboolean cancelled, GitgRepository *re
 	}
 
 	LoadStage current = repository->priv->load_stage++;
-	GitgPreferences *preferences = gitg_preferences_get_default();
 	gboolean show_unstaged;
 	gboolean show_staged;
 
-	g_object_get(preferences,
-	             "history-show-virtual-staged", &show_staged,
-	             "history-show-virtual-unstaged", &show_unstaged,
-	             NULL);
+	show_unstaged = repository->priv->show_unstaged;
+	show_staged = repository->priv->show_staged;
 
 	switch (current)
 	{
@@ -715,10 +852,9 @@ static void
 loader_update_stash(GitgRepository *repository, gchar **buffer)
 {
 	gchar *line;
-	GitgPreferences *preferences = gitg_preferences_get_default();
 	gboolean show_stash;
 
-	g_object_get(preferences, "history-show-virtual-stash", &show_stash, NULL);
+	show_stash = repository->priv->show_stash;
 
 	if (!show_stash)
 		return;
@@ -843,61 +979,10 @@ prepare_relane(GitgRepository *repository)
 		repository->priv->idle_relane_id = g_idle_add((GSourceFunc)repository_relane, repository);
 }
 
-static gboolean
-convert_setting_to_inactive_max(GValue const *setting, GValue *value, gpointer userdata)
-{
-	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
-	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
-
-	gint s = g_value_get_int(setting);
-	g_value_set_int(value, 2 + s * 8);
-
-	prepare_relane(GITG_REPOSITORY(userdata));
-	return TRUE;
-}
-
-static gboolean
-convert_setting_to_inactive_collapse(GValue const *setting, GValue *value, gpointer userdata)
-{
-	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
-	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
-
-	gint s = g_value_get_int(setting);
-	g_value_set_int(value, 1 + s * 3);
-
-	prepare_relane(GITG_REPOSITORY(userdata));
-	return TRUE;
-}
-
-static gboolean
-convert_setting_to_inactive_gap(GValue const *setting, GValue *value, gpointer userdata)
-{
-	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_INT), FALSE);
-	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_INT), FALSE);
-
-	g_value_set_int(value, 10);
-
-	prepare_relane(GITG_REPOSITORY(userdata));
-	return TRUE;
-}
-
-static gboolean
-convert_setting_to_inactive_enabled(GValue const *setting, GValue *value, gpointer userdata)
-{
-	g_return_val_if_fail(G_VALUE_HOLDS(setting, G_TYPE_BOOLEAN), FALSE);
-	g_return_val_if_fail(G_VALUE_HOLDS(value, G_TYPE_BOOLEAN), FALSE);
-
-	gboolean s = g_value_get_boolean(setting);
-	g_value_set_boolean(value, s);
-
-	prepare_relane(GITG_REPOSITORY(userdata));
-	return TRUE;
-}
-
 static void
-on_update_virtual(GObject *object, GParamSpec *spec, GitgRepository *repository)
+on_lane_setting_changed(GitgRepository *repository, GParamSpec *pspec, gpointer useless)
 {
-	gitg_repository_reload (repository);
+	prepare_relane(repository);
 }
 
 static gchar **
@@ -931,10 +1016,9 @@ has_left_right(gchar const **av, int argc)
 static void
 build_log_args(GitgRepository *self, gint argc, gchar const **av)
 {
-	GitgPreferences *preferences = gitg_preferences_get_default ();
 	gboolean topoorder;
 
-	g_object_get (preferences, "history-topo-order", &topoorder, NULL);
+	topoorder = self->priv->topoorder;
 
 	gchar **argv = g_new0(gchar *, 6 + topoorder + (argc > 0 ? argc - 1 : 0));
 
@@ -991,7 +1075,7 @@ build_log_args(GitgRepository *self, gint argc, gchar const **av)
 }
 
 static void
-on_update_topo_order(GObject *object, GParamSpec *spec, GitgRepository *repository)
+on_update_topo_order(GitgRepository *repository, GParamSpec *spec, gpointer useless)
 {
 	build_log_args (repository,
 	                g_strv_length (repository->priv->selection),
@@ -1001,49 +1085,9 @@ on_update_topo_order(GObject *object, GParamSpec *spec, GitgRepository *reposito
 }
 
 static void
-initialize_bindings(GitgRepository *repository)
+on_update_virtual(GitgRepository *repository, GParamSpec *spec, gpointer useless)
 {
-	GitgPreferences *preferences = gitg_preferences_get_default();
-
-	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
-							   repository->priv->lanes, "inactive-max",
-							   convert_setting_to_inactive_max,
-							   repository);
-
-	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
-							   repository->priv->lanes, "inactive-collapse",
-							   convert_setting_to_inactive_collapse,
-							   repository);
-
-	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes",
-							   repository->priv->lanes, "inactive-gap",
-							   convert_setting_to_inactive_gap,
-							   repository);
-
-	gitg_data_binding_new_full(preferences, "history-collapse-inactive-lanes-active",
-	                           repository->priv->lanes, "inactive-enabled",
-	                           convert_setting_to_inactive_enabled,
-	                           repository);
-
-	g_signal_connect(preferences, 
-	                 "notify::history-show-virtual-stash",
-	                 G_CALLBACK(on_update_virtual),
-	                 repository);
-
-	g_signal_connect(preferences, 
-	                 "notify::history-show-virtual-unstaged",
-	                 G_CALLBACK(on_update_virtual),
-	                 repository);
-
-	g_signal_connect(preferences, 
-	                 "notify::history-show-virtual-staged",
-	                 G_CALLBACK(on_update_virtual),
-	                 repository);
-
-	g_signal_connect(preferences, 
-	                 "notify::history-topo-order",
-	                 G_CALLBACK(on_update_topo_order),
-	                 repository);
+	gitg_repository_reload(repository);
 }
 
 static void
@@ -1066,7 +1110,45 @@ gitg_repository_init(GitgRepository *object)
 	g_signal_connect(object->priv->loader, "update", G_CALLBACK(on_loader_update), object);
 	g_signal_connect(object->priv->loader, "end-loading", G_CALLBACK(on_loader_end_loading), object);
 
-	initialize_bindings(object);
+	g_signal_connect(object,
+	                 "notify::show-stash",
+	                 G_CALLBACK(on_update_virtual),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::show-unstaged",
+	                 G_CALLBACK(on_update_virtual),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::show-staged",
+	                 G_CALLBACK(on_update_virtual),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::topo-order",
+	                 G_CALLBACK(on_update_topo_order),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::inactive_mac",
+	                 G_CALLBACK(on_lane_setting_changed),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::inactive_collapse",
+	                 G_CALLBACK(on_lane_setting_changed),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::inactive_gap",
+	                 G_CALLBACK(on_lane_setting_changed),
+	                 NULL);
+
+	g_signal_connect(object,
+	                 "notify::inactive_enabled",
+	                 G_CALLBACK(on_lane_setting_changed),
+	                 NULL);
 }
 
 static void

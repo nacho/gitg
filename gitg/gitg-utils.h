@@ -27,8 +27,8 @@
 #include <gtksourceview/gtksourcelanguagemanager.h>
 #include <gio/gio.h>
 
-#include "gitg-repository.h"
-#include "gitg-revision.h"
+#include <libgitg/gitg-repository.h>
+#include <libgitg/gitg-revision.h>
 
 void gitg_utils_sha1_to_hash(gchar const *sha, gchar *hash);
 void gitg_utils_hash_to_sha1(gchar const *hash, gchar *sha);

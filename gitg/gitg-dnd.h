@@ -2,8 +2,8 @@
 #define __GITG_DND_H__
 
 #include <gtk/gtk.h>
-#include "gitg-ref.h"
-#include "gitg-revision.h"
+#include <libgitg/gitg-ref.h>
+#include <libgitg/gitg-revision.h>
 
 G_BEGIN_DECLS
 
