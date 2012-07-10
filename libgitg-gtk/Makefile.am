@@ -38,6 +38,7 @@ libgitg-gtk.h: libgitg-gtk-1.0.la
 
 VALA_FILES =					\
 	egg-list-box/egg-list-box.vala		\
+	gitg-gtk-dash-view.vala			\
 	gitg-gtk-commit-model.vala		\
 	gitg-gtk-label-renderer.vala		\
 	gitg-gtk-cell-renderer-lanes.vala	\
